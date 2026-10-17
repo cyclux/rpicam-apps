@@ -29,9 +29,13 @@ postproc_assets += files([
     assets_dir / 'negate.json',
 ])
 
+# Servo controller C++ shared library from the cervo project
+cervo_lib = dependency('cervo', required : true)
+
+# Core postprocessing shared library linking with libcervo.so
 core_postproc_lib = shared_module('core-postproc', core_postproc_src,
-                                  include_directories : '../..',
-                                  dependencies : libcamera_dep,
+                                  include_directories : ['../..', '/home/pi/projects/cervo'],
+                                  dependencies : [libcamera_dep, cervo_lib],  # Link with libcervo.so
                                   cpp_args : cpp_arguments,
                                   install : true,
                                   install_dir : posproc_libdir,
@@ -58,8 +62,8 @@ if opencv_dep.found()
     ])
 
     opencv_postproc_lib = shared_module('opencv-postproc', opencv_postproc_src,
-                                        include_directories : '../..',
-                                        dependencies : [libcamera_dep, opencv_dep],
+                                        include_directories : ['../..', '/home/pi/projects/cervo'],
+                                        dependencies : [libcamera_dep, opencv_dep, cervo_lib],  # Link with libcervo.so
                                         cpp_args : cpp_arguments,
                                         install : true,
                                         install_dir : posproc_libdir,
@@ -119,4 +123,10 @@ post_processing_headers = files([
 ])
 
 install_headers(post_processing_headers, subdir: meson.project_name() / 'post_processing_stages')
+
+# Include the servo_controller.hpp header file in the installation
+# install_headers('/home/pi/projects/cervo/servo_controller.hpp', 
+#                 subdir: meson.project_name() / 'servo_controller')
+
+# Install the JSON and other assets
 install_data(postproc_assets, install_dir : get_option('datadir') / 'rpi-camera-assets')

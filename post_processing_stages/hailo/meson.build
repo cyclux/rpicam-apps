@@ -50,10 +50,13 @@ endif
 
 hailo_cpp_arguments = ['-Wno-ignored-qualifiers', '-Wno-unused-parameter', '-Wno-extra']
 
+# Create a static library for the C sources
+# c_static_lib = static_library('clibrary', c_sources)
+
 hailo_postprocessing_lib = shared_module('hailo-postproc', hailo_postprocessing_src,
                                          dependencies : hailo_deps,
                                          cpp_args : hailo_cpp_arguments,
-                                         include_directories : '../..',
+                                         include_directories : ['../..', '/home/pi/projects/cervo'],
                                          install : true,
                                          install_dir : posproc_libdir,
                                          name_prefix : '',
