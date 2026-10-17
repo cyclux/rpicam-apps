@@ -13,6 +13,8 @@
 
 #include "object_detect.hpp"
 
+#include "cervo.hpp"
+
 using namespace cv;
 
 using Rectange = libcamera::Rectangle;
@@ -21,9 +23,8 @@ using Stream = libcamera::Stream;
 class ObjectDetectDrawCvStage : public PostProcessingStage
 {
 public:
-	ObjectDetectDrawCvStage(RPiCamApp *app) : PostProcessingStage(app)
-	{
-	}
+	// Constructor where PWMController is instantiated and initialized once
+	ObjectDetectDrawCvStage(RPiCamApp *app) : PostProcessingStage(app), servo() { servo.init({ 2, 3 }); }
 
 	char const *Name() const override;
 
@@ -37,6 +38,7 @@ private:
 	Stream *stream_;
 	int line_thickness_;
 	double font_size_;
+	PWMController servo;
 };
 
 #define NAME "object_detect_draw_cv"
@@ -75,6 +77,9 @@ bool ObjectDetectDrawCvStage::Process(CompletedRequestPtr &completed_request)
 	Scalar colour = Scalar(255, 255, 255);
 	int font = FONT_HERSHEY_SIMPLEX;
 
+	int img_center_x = (info.width / 2);
+	int img_center_y = (info.height / 2);
+
 	for (auto &detection : detections)
 	{
 		Rect r(detection.box.x, detection.box.y, detection.box.width, detection.box.height);
@@ -86,6 +91,29 @@ bool ObjectDetectDrawCvStage::Process(CompletedRequestPtr &completed_request)
 		Size size = getTextSize(text, font, font_size_, 2, &baseline);
 		Point text_origin(detection.box.x + 5, detection.box.y + size.height + 5);
 		putText(image, text, text_origin, font, font_size_, colour, 2);
+
+		// Draw center point
+		int detected_center_point_x = detection.box.x + (detection.box.width / 2) - 5;
+		int detected_center_point_y = detection.box.y + (detection.box.height / 2) - 5;
+
+		Rect center_rect(detected_center_point_x, detected_center_point_y, 10, 10);
+
+		rectangle(image, center_rect, Scalar(255, 255, 0), line_thickness_); // Green color for extra Rectangle
+
+		// Draw center point of the image
+		Point center_point(img_center_x, img_center_y);
+		circle(image, center_point, 5, Scalar(255, 255, 0), -1); // Draw a green circle at the center
+
+		int delta_distance_x = img_center_x - detected_center_point_x;
+		int delta_distance_y = img_center_y - detected_center_point_y;
+
+		std::cout << "center_point: (" << detected_center_point_x << ", " << detected_center_point_y << "), "
+				  << "width=" << info.width << ", height=" << info.height << ", delta_x=" << delta_distance_x
+				  << ", delta_y=" << delta_distance_y << std::endl;
+
+		int temp = detected_center_point_y + 500;
+		servo.setDutyCycle(2, detected_center_point_x);
+		servo.setDutyCycle(3, temp);
 	}
 
 	return false;

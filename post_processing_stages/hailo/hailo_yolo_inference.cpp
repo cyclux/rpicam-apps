@@ -52,6 +52,7 @@ public:
 private:
 	std::vector<Detection> runInference(const uint8_t *frame, const std::vector<libcamera::Rectangle> &scaler_crops);
 	void filterOutputObjects(std::vector<Detection> &objects);
+	void printBoundingBoxes(const std::vector<Detection> &objects); // Added function
 
 	struct LtObject
 	{
@@ -275,14 +276,29 @@ std::vector<Detection> YoloInference::runInference(const uint8_t *frame, const s
 		libcamera::Rectangle r = ConvertInferenceCoordinates({ x0, y0, x1 - x0, y1 - y0 }, scaler_crops);
 		results.emplace_back(d->get_class_id(), d->get_label(), d->get_confidence(), r.x, r.y, r.width, r.height);
 		LOG(2, "Object: " << results.back().toString());
-
+		// std::string label = results[0]->get_label();
+		// hello_c(const_cast<char *>(label.c_str()));
 		if (--max_detections_ == 0)
 			break;
 	}
 
+	// Print bounding box coordinates
+	// TODO: Print bounding boxes
+	// printBoundingBoxes(results); // Added call to print function
+
 	LOG(2, "------");
 
 	return results;
+}
+
+void YoloInference::printBoundingBoxes(const std::vector<Detection> &objects)
+{
+	for (const auto &obj : objects)
+	{
+		std::cout << "BoundingBox: x=" << obj.box.x << ", y=" << obj.box.y << ", width=" << obj.box.width
+				  << ", height=" << obj.box.height << ", confidence=" << obj.confidence << ", name=" << obj.name
+				  << std::endl;
+	}
 }
 
 void YoloInference::filterOutputObjects(std::vector<Detection> &objects)
